@@ -1,0 +1,22 @@
+
+version: '3.9'
+
+services:
+  api:
+    build: ./api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api:/app
+    env_file:
+      - ./api/.env
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - api
+
