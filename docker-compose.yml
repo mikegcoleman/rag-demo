@@ -1,4 +1,3 @@
-
 version: '3.9'
 
 services:
@@ -6,8 +5,10 @@ services:
     build: ./api
     ports:
       - "8000:8000"
-    volumes:
-      - ./api:/app
+    develop:
+      watch:
+        - path: ./api
+          target: /app
     env_file:
       - ./api/.env
 
@@ -15,8 +16,10 @@ services:
     build: ./frontend
     ports:
       - "8501:8501"
-    volumes:
-      - ./frontend:/app
+    develop:
+      watch:
+        - path: ./frontend
+          target: /app
     depends_on:
       - api
 
