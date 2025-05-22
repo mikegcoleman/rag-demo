@@ -21,11 +21,15 @@ if "messages" not in st.session_state:
 if "session_id" not in st.session_state:
     st.session_state.session_id = "demo-user"
 
+# Toggle for enabling/disabling RAG
+use_rag = st.checkbox("Use RAG for context", value=True)
+
 # Clear memory button
 if st.button("🧹 Clear memory"):
     res = requests.post(API_URL, json={
         "session_id": st.session_state.session_id,
-        "user_message": "clear"
+        "user_message": "clear",
+        "use_rag": use_rag
     })
     st.session_state.messages = []
     st.success("Memory cleared.")
@@ -44,7 +48,8 @@ if prompt := st.chat_input("Ask a question about support issues..."):
     try:
         res = requests.post(API_URL, json={
             "session_id": st.session_state.session_id,
-            "user_message": prompt
+            "user_message": prompt,
+            "use_rag": use_rag
         })
         res.raise_for_status()
         answer = res.json()["response"]

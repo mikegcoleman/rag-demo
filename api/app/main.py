@@ -31,9 +31,8 @@ MAX_FAISS_DISTANCE = 1.2
 
 # Initialize FastAPI app
 app = FastAPI()
-
 API_PORT = os.getenv("API_PORT", "8000")
-print(f"[INFO] API is running. Port: {API_PORT}")
+print(f"[INFO] API is running on port {API_PORT}")
 
 # Load index and metadata
 index_path = os.path.join(DATA_DIR, "support_index.faiss")
@@ -52,19 +51,29 @@ memory = MemoryStore()
 class ChatRequest(BaseModel):
     session_id: str
     user_message: str
+    use_rag: bool = True
 
 @app.post("/chat")
 async def chat(req: ChatRequest):
-    # Manual memory clear
     if req.user_message.lower().strip() in ["clear", "reset", "forget", "start over"]:
         memory.clear(req.session_id)
         return {"response": "🧹 Memory cleared. Ask me anything new!", "source_count": 0}
 
-    # Embed query and search FAISS
+    if not req.use_rag:
+        prompt = f"""
+You are a helpful support assistant.
+
+User question:
+{req.user_message}
+
+Provide your best answer without referencing previous memory or support ticket context.
+"""
+        llm_response = query_llm(LLM_URL, LLM_NAME, prompt)
+        return {"response": llm_response, "source_count": 0}
+
     query_vec = embedder.encode([req.user_message]).astype("float32")
     D, I = index.search(query_vec, k=TOP_K)
 
-    # Relevance check
     top_score = D[0][0]
     if top_score > MAX_FAISS_DISTANCE:
         return {
@@ -73,11 +82,8 @@ async def chat(req: ChatRequest):
         }
 
     retrieved = [metadata[ticket_ids[i]] for i in I[0]]
-
-    # Get session memory
     history = memory.get(req.session_id)
 
-    # Construct prompt
     context = "\n\n".join(retrieved)
     full_prompt = f"""
 You are a helpful support assistant.
@@ -94,14 +100,7 @@ Relevant support tickets:
 Based on the above, provide a helpful and accurate answer:
 """
 
-    # Call LLM
     llm_response = query_llm(LLM_URL, LLM_NAME, full_prompt)
-
-    # Save message to memory
     memory.append(req.session_id, f"User: {req.user_message}\nAssistant: {llm_response}")
 
     return {"response": llm_response, "source_count": len(retrieved)}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=int(API_PORT), reload=True)
