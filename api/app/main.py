@@ -23,6 +23,8 @@ LLM_NAME = os.getenv("LLM_NAME")
 LLM_URL = os.getenv("LLM_URL")
 if not LLM_NAME or not LLM_URL:
     raise RuntimeError("LLM_NAME and LLM_URL environment variables must be set in api/.env or the environment.")
+LLM_NAME = str(LLM_NAME)
+LLM_URL = str(LLM_URL)
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 TOP_K = 5
 MAX_FAISS_DISTANCE = 1.2
