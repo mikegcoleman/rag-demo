@@ -1,0 +1,19 @@
+{
+  "name": "rag-demo-dev",
+  "dockerComposeFile": "compose.yaml",
+  "service": "api",
+  "workspaceFolder": "/app",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/homebrew/bin/python3"
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  },
+  "forwardPorts": [8000],
+  "remoteUser": "root"
+}

@@ -1,10 +1,19 @@
 import streamlit as st
 import requests
+import os
+from dotenv import load_dotenv
 
-st.set_page_config(page_title="Support Chatbot")
+# Load environment variables from .env if present
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env'))
+
+API_PORT = os.getenv("API_PORT", "8000")
+FRONTEND_PORT = os.getenv("FRONTEND_PORT", "5000")
+API_URL = f"http://api:{API_PORT}/chat"
+
+st.set_page_config(page_title="Support Chatbot", server_port=int(FRONTEND_PORT))
 st.title("🛠️ Support Chatbot")
 
-API_URL = "http://api:8000/chat"
+print(f"[INFO] Frontend is running. Port: {FRONTEND_PORT}")
 
 # Initialize session state
 if "messages" not in st.session_state:

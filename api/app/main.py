@@ -21,12 +21,17 @@ load_dotenv(dotenv_path=ENV_PATH)
 # Config
 LLM_NAME = os.getenv("LLM_NAME")
 LLM_URL = os.getenv("LLM_URL")
+if not LLM_NAME or not LLM_URL:
+    raise RuntimeError("LLM_NAME and LLM_URL environment variables must be set in api/.env or the environment.")
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 TOP_K = 5
 MAX_FAISS_DISTANCE = 1.2
 
 # Initialize FastAPI app
 app = FastAPI()
+
+API_PORT = os.getenv("API_PORT", "8000")
+print(f"[INFO] API is running. Port: {API_PORT}")
 
 # Load index and metadata
 index_path = os.path.join(DATA_DIR, "support_index.faiss")
@@ -94,3 +99,7 @@ Based on the above, provide a helpful and accurate answer:
     memory.append(req.session_id, f"User: {req.user_message}\nAssistant: {llm_response}")
 
     return {"response": llm_response, "source_count": len(retrieved)}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="0.0.0.0", port=int(API_PORT), reload=True)
