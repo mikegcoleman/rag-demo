@@ -3,13 +3,6 @@ services:
     build: ./api
     ports:
       - "8000:8000"
-    develop:
-      watch:
-        - path: ./api/app
-          target: /app
-          action: sync
-        - path: ./api/requirements.txt
-          action: rebuild
     env_file:
       - ./api/.env
 
@@ -17,12 +10,5 @@ services:
     build: ./frontend
     ports:
       - "8501:8501"
-    develop:
-      watch:
-        - path: ./frontend/app.py
-          target: /app/app.py
-          action: sync
-        - path: ./frontend/requirements.txt
-          action: rebuild
     depends_on:
       - api

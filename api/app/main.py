@@ -52,6 +52,7 @@ class ChatRequest(BaseModel):
     session_id: str
     user_message: str
     use_rag: bool = True
+    debug: bool = False
 
 @app.post("/chat")
 async def chat(req: ChatRequest):
@@ -59,34 +60,39 @@ async def chat(req: ChatRequest):
         memory.clear(req.session_id)
         return {"response": "🧹 Memory cleared. Ask me anything new!", "source_count": 0}
 
-    if not req.use_rag:
-        prompt = f"""
-You are a helpful support assistant.
-
-User question:
-{req.user_message}
-
-Provide your best answer without referencing previous memory or support ticket context.
-"""
-        llm_response = query_llm(LLM_URL, LLM_NAME, prompt)
-        return {"response": llm_response, "source_count": 0}
-
-    query_vec = embedder.encode([req.user_message]).astype("float32")
-    D, I = index.search(query_vec, k=TOP_K)
-
-    top_score = D[0][0]
-    if top_score > MAX_FAISS_DISTANCE:
-        return {
-            "response": "❌ Sorry, I couldn't find any relevant support tickets for that question.",
-            "source_count": 0
-        }
-
-    retrieved = [metadata[ticket_ids[i]] for i in I[0]]
     history = memory.get(req.session_id)
+    retrieved = []
+    context = None
 
-    context = "\n\n".join(retrieved)
-    full_prompt = f"""
-You are a helpful support assistant.
+    if req.use_rag:
+        query_vec = embedder.encode([req.user_message]).astype("float32")
+        D, I = index.search(query_vec, k=TOP_K)
+
+        top_score = D[0][0]
+        if top_score > MAX_FAISS_DISTANCE:
+            response = {
+                "response": "❌ Sorry, I couldn't find any relevant support tickets for that question.",
+                "source_count": 0
+            }
+            if req.debug:
+                response["prompt"] = None
+                response["history"] = history
+                response["context"] = None
+            return response
+
+        retrieved = [metadata[ticket_ids[i]] for i in I[0]]
+        context_chunks = []
+        for i, record in enumerate(retrieved, start=1):
+            desc = record.get("subject", "").strip()
+            res = record.get("resolution_details", "").strip()
+            context_chunks.append(f"Ticket {i}:\nDescription: {desc}\nResolution: {res}")
+        context = "\n\n".join(context_chunks)
+
+        prompt = f"""
+You are a support assistant. You are answering questions from a support engineer who is asking on behalf of a customer. 
+You have access to support tickets that may help you answer the question.
+
+Use only the following support tickets. If they show that an issue was acknowledged but not fully resolved (e.g., a bug was filed), you may explain that. Do not make assumptions or offer generic advice. Do not guess.
 
 Conversation history:
 {history}
@@ -97,10 +103,31 @@ User question:
 Relevant support tickets:
 {context}
 
-Based on the above, provide a helpful and accurate answer:
+Based on the above, provide a helpful and accurate answer. Do no speculate or make assumptions. If the tickets do not provide enough information to answer the question, say so.
+"""
+    else:
+        prompt = f"""
+You are a helpful support assistant.
+
+Conversation history:
+{history}
+
+User question:
+{req.user_message}
+
+Provide your best answer without referencing support ticket documents.
 """
 
-    llm_response = query_llm(LLM_URL, LLM_NAME, full_prompt)
+    llm_response = query_llm(LLM_URL, LLM_NAME, prompt)
     memory.append(req.session_id, f"User: {req.user_message}\nAssistant: {llm_response}")
 
-    return {"response": llm_response, "source_count": len(retrieved)}
+    response = {
+        "response": llm_response,
+        "source_count": len(retrieved)
+    }
+    if req.debug:
+        response["prompt"] = prompt
+        response["history"] = history
+        response["context"] = context
+    
+    return response
