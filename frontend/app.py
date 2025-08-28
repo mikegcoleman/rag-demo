@@ -8,7 +8,8 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env'))
 
 API_PORT = os.getenv("API_PORT", "8000")
 FRONTEND_PORT = os.getenv("FRONTEND_PORT", "8501")
-API_URL = f"http://api:{API_PORT}/chat"
+API_URL="http://192.168.86.4:8000/chat" # Calls Windows Machine w/ NVIDIA GPU
+# API_URL = f"http://localhost:{API_PORT}/chat"  # Calls local API server w/ Apple Silicon
 
 st.set_page_config(page_title="Support Chatbot")
 st.title("🛠️ Support Chatbot")
