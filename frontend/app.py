@@ -8,8 +8,9 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env'))
 
 API_PORT = os.getenv("API_PORT", "8000")
 FRONTEND_PORT = os.getenv("FRONTEND_PORT", "8501")
-API_URL="http://192.168.86.4:8000/chat" # Calls Windows Machine w/ NVIDIA GPU
-# API_URL = f"http://localhost:{API_PORT}/chat"  # Calls local API server w/ Apple Silicon
+API_HOST = os.getenv("API_HOST", "api")   
+
+API_URL = f"http://api:{API_PORT}/chat"  # Calls local API server w/ Apple Silicon
 
 st.set_page_config(page_title="Support Chatbot")
 st.title("🛠️ Support Chatbot")
@@ -66,6 +67,7 @@ if prompt := st.chat_input("Ask a question about support issues..."):
         st.markdown(prompt)
 
     try:
+        print(f"[INFO] Sending request to API: {API_URL}")
         res = requests.post(API_URL, json={
             "session_id": st.session_state.session_id,
             "user_message": prompt,

@@ -54,6 +54,10 @@ class ChatRequest(BaseModel):
     use_rag: bool = True
     debug: bool = False
 
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
 @app.post("/chat")
 async def chat(req: ChatRequest):
     if req.user_message.lower().strip() in ["clear", "reset", "forget", "start over"]:
