@@ -1,3 +1,7 @@
+models:
+  llm:
+    model: ai/deepseek-r1-distill-llama
+
 services:
   api:
     build: ./api
@@ -5,6 +9,10 @@ services:
       - "8000:8000"
     env_file:
       - ./api/.env
+    models:
+      llm:
+        endpoint_var: LLM_URL
+        model_var: LLM_NAME
 
   frontend:
     build: ./frontend
